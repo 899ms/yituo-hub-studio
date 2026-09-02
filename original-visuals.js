@@ -21,13 +21,49 @@
   function inlineSpec(spec, p) {
     var clone = {};
     Object.keys(spec || {}).forEach(function (key) { clone[key] = spec[key]; });
-    clone.underline = (spec && spec.underline) || ('border-bottom:2px solid ' + p.accent2 + ';font-weight:600;');
+    /* 配色变体会携带重建的 underline（themes.js 的 underline 按默认配色硬编码），优先取 p.underline。 */
+    clone.underline = p.underline || (spec && spec.underline) || ('border-bottom:2px solid ' + p.accent2 + ';font-weight:600;');
     clone.c = {
       primary: p.accent, deep: p.ink, light: p.accent2, tint: p.surface,
       ink: p.ink, text: p.ink, sub: p.muted, border: p.line,
       accent: p.accent2, coverA: p.accent, coverB: p.ink, codeBg: p.surface
     };
     return clone;
+  }
+
+  /* 配色变体换色：把冻结模板 / 组件 SVG 文本中的默认 hex（与 gridLine rgba 字面量）
+   * 按 profile.colorMap 整表替换。替换是纯文本、大小写不敏感的值替换，
+   * 不触碰 SVG 几何、viewBox 与 SMIL 动画；默认配色无 colorMap 时原样返回。
+   * hex 源值若存在 3 位缩写形式（如 #FFFFFF/#FFF）一并替换；长值优先，避免部分匹配。
+   */
+  function recolor(source, p) {
+    var map = p && p.colorMap;
+    var text = String(source == null ? '' : source);
+    if (!map || !map.length) return text;
+    for (var i = 0; i < map.length; i++) {
+      var from = map[i][0];
+      var to = map[i][1];
+      if (!from || !to || from === to) continue;
+      var pattern;
+      if (from.charAt(0) === '#') {
+        pattern = escapeRe(from) + '\\b';
+        var shorthand = hexShorthand(from);
+        if (shorthand) pattern = '(?:' + escapeRe(from) + '|' + escapeRe(shorthand) + ')\\b';
+      } else {
+        pattern = escapeRe(from);
+      }
+      text = text.replace(new RegExp(pattern, 'gi'), to);
+    }
+    return text;
+  }
+
+  function escapeRe(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function hexShorthand(hex) {
+    var match = /^#([0-9A-Fa-f])\1([0-9A-Fa-f])\2([0-9A-Fa-f])\3$/.exec(hex);
+    return match ? '#' + match[1] + match[2] + match[3] : null;
   }
 
   function inline(value, spec) {
@@ -583,9 +619,9 @@
   function titleBands(p, level, motionEnabled, manifest, assets) {
     var item = component(manifest, p.styleId, 'title');
     if (!item) fail('主题缺少 title 组件：' + p.styleId);
-    var staticSvg = assetText(assets, item.static_file);
+    var staticSvg = recolor(assetText(assets, item.static_file), p);
     var dynamic = motionEnabled && level.motion !== 'none';
-    var motionSvg = dynamic && item.motion_file ? assetText(assets, item.motion_file) : staticSvg;
+    var motionSvg = dynamic && item.motion_file ? recolor(assetText(assets, item.motion_file), p) : staticSvg;
     var meta = svgMeta(staticSvg);
     var topHeight = Math.max(112, Math.min(170, meta.height * 0.47));
     var bottomY = Math.max(208, Math.min(meta.height - 54, meta.height * 0.58));
@@ -602,7 +638,7 @@
     var base = sectionHeading(index, section, p);
     var item = component(manifest, p.styleId, 'section-title');
     if (!item) return base;
-    var svg = cleanSvg(assetText(assets, item.static_file), p.name + '章节装饰');
+    var svg = cleanSvg(recolor(assetText(assets, item.static_file), p), p.name + '章节装饰');
     return '<section data-component-role="section-title" style="margin:0;">' + base + svg + '</section>';
   }
 
@@ -728,12 +764,12 @@
     var staticPath = templatePath(p.styleId, false);
     var motionPath = templatePath(p.styleId, true);
     var basePath = dynamic && level.id === 'motion-themed-frame' ? motionPath : staticPath;
-    var parsed = parseTemplate(assetText(assets, basePath), p.name + '最终模板');
+    var parsed = parseTemplate(recolor(assetText(assets, basePath), p), p.name + '最终模板');
     var doc = parsed.document;
     var root = parsed.root;
 
     if (dynamic && level.id === 'motion-title-static-frame') {
-      var motionParsed = parseTemplate(assetText(assets, motionPath), p.name + '动态标题模板');
+      var motionParsed = parseTemplate(recolor(assetText(assets, motionPath), p), p.name + '动态标题模板');
       var staticTitle = directRole(root, 'title');
       var motionTitle = directRole(motionParsed.root, 'title');
       if (!staticTitle || !motionTitle) fail(p.name + '缺少最终标题槽');
@@ -743,6 +779,7 @@
     root.setAttribute('data-original-system', 'production-template-v6');
     root.setAttribute('data-original-level', level.id);
     root.setAttribute('data-original-style', p.styleId);
+    root.setAttribute('data-original-colorway', p.colorId || 'default');
     root.setAttribute('data-original-template-release', 'v30-standard402-full-effects');
     root.setAttribute('data-original-motion-release', 'v6');
     root.setAttribute('data-original-motion-enabled', dynamic ? 'true' : 'false');
@@ -836,7 +873,7 @@
   function render(tokens, themeSpec, opt, assets, manifest) {
     opt = opt || {};
     assets = assets || {};
-    var p = Data.profileForTheme(themeSpec && themeSpec.id);
+    var p = Data.profileForTheme(themeSpec && themeSpec.id, opt.colorId);
     if (!p) fail('不是蓝梦原创视觉主题：' + (themeSpec && themeSpec.id));
     var level = Data.level(opt.levelId || 'motion-themed-frame');
     var article = articleFromTokens(tokens);

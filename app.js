@@ -20,6 +20,7 @@
   var toastEl = document.getElementById('toast');
   var pickerSlot = document.getElementById('themePickerSlot');
   var levelSlot = document.getElementById('levelPickerSlot');
+  var colorSlot = document.getElementById('colorPickerSlot');
   var motionModeBtn = document.getElementById('motionModeBtn');
   var previewWidth = 'fit';
 
@@ -29,6 +30,7 @@
     group: 'all',
     levelId: 'motion-themed-frame',
     motionEnabled: true,
+    colorId: 'default',
     html: '',
     timer: null,
     renderId: 0,
@@ -36,7 +38,8 @@
     manifest: null,
     assetCache: {},
     pickerOpen: false,
-    levelOpen: false
+    levelOpen: false,
+    colorOpen: false
   };
 
   var SAMPLE_MD = [
@@ -256,14 +259,14 @@
       task = Promise.resolve(Themes.render(tokens, spec, { author: authorInput.value.trim() }));
     } else if (currentLevel().order < 3) {
       task = Promise.resolve(Originals.render(tokens, spec, {
-        author: authorInput.value.trim(), levelId: state.levelId, motionEnabled: state.motionEnabled
+        author: authorInput.value.trim(), levelId: state.levelId, motionEnabled: state.motionEnabled, colorId: state.colorId
       }, {}, null));
     } else {
       setLoading();
       task = ensureManifest().then(function (manifest) {
         return loadOriginalAssets(spec, manifest).then(function (assets) {
           return Originals.render(tokens, spec, {
-            author: authorInput.value.trim(), levelId: state.levelId, motionEnabled: state.motionEnabled
+            author: authorInput.value.trim(), levelId: state.levelId, motionEnabled: state.motionEnabled, colorId: state.colorId
           }, assets, manifest);
         });
       });
@@ -323,6 +326,7 @@
       button.addEventListener('click', function (event) {
         event.stopPropagation();
         closeLevelPicker();
+        closeColorPicker();
         var sameOpenLibrary = state.pickerOpen && state.library === library.id;
         state.library = library.id;
         state.group = 'all';
@@ -389,9 +393,11 @@
       card.addEventListener('click', function () {
         state.themeId = card.dataset.id;
         state.library = libraryForTheme(Themes.getSpec(state.themeId)).id;
+        state.colorId = 'default';
         closePicker();
         renderPickerButtons();
         renderLevelControls();
+        renderColorControls();
         convert().catch(function () {});
       });
     });
@@ -416,6 +422,7 @@
     levelButton.addEventListener('click', function (event) {
       event.stopPropagation();
       closePicker();
+      closeColorPicker();
       state.levelOpen = !state.levelOpen;
       levelPop.hidden = !state.levelOpen;
       renderLevelControls();
@@ -464,6 +471,7 @@
         state.motionEnabled = true;
         closeLevelPicker();
         renderLevelControls();
+        renderColorControls();
         convert().catch(function () {});
       });
     });
@@ -474,6 +482,99 @@
     renderLevelControls();
     convert().catch(function () {});
   });
+
+  /* ---------- 高级排版配色选择（每主题 5 套定制配色） ---------- */
+
+  var colorButton;
+  var colorPop;
+
+  function currentColorways() {
+    return (isOriginalSpec(Themes.getSpec(state.themeId)) && OriginalData.colorwaysForTheme(state.themeId)) || null;
+  }
+
+  function currentColorway() {
+    var list = currentColorways();
+    if (!list) return null;
+    for (var i = 0; i < list.length; i++) if (list[i].id === state.colorId) return list[i];
+    return list[0];
+  }
+
+  function closeColorPicker() {
+    state.colorOpen = false;
+    if (colorPop) colorPop.hidden = true;
+    renderColorControls();
+  }
+
+  function buildColorPicker() {
+    colorSlot.innerHTML = '';
+    colorButton = document.createElement('button');
+    colorButton.type = 'button';
+    colorButton.className = 'picker-btn color-picker-btn';
+    colorButton.addEventListener('click', function (event) {
+      event.stopPropagation();
+      closePicker();
+      closeLevelPicker();
+      state.colorOpen = !state.colorOpen;
+      colorPop.hidden = !state.colorOpen;
+      renderColorControls();
+      if (state.colorOpen) renderColorPop();
+    });
+    colorPop = document.createElement('div');
+    colorPop.id = 'colorPickerPop';
+    colorPop.className = 'color-pop';
+    colorPop.hidden = true;
+    colorPop.addEventListener('click', function (event) { event.stopPropagation(); });
+    colorSlot.appendChild(colorButton);
+    colorSlot.appendChild(colorPop);
+    renderColorControls();
+  }
+
+  function renderColorControls() {
+    var original = isOriginalSpec(Themes.getSpec(state.themeId));
+    var visible = original && currentLevel().order > 1 && currentColorways();
+    colorSlot.hidden = !visible;
+    if (!visible) {
+      state.colorOpen = false;
+      if (colorPop) colorPop.hidden = true;
+      return;
+    }
+    var colorway = currentColorway();
+    colorButton.classList.toggle('open', state.colorOpen);
+    colorButton.setAttribute('aria-expanded', String(state.colorOpen));
+    colorButton.setAttribute('aria-controls', 'colorPickerPop');
+    colorButton.innerHTML = '<span class="picker-kind">配色</span><span class="color-chip-dots">' + colorwayDots(colorway) + '</span><span class="picker-name">' + colorway.name + '</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  }
+
+  /* 配色预览色点：底色、面板、主强调、次强调、线条。 */
+  function colorwayDots(colorway) {
+    var p = OriginalData.profileForTheme(state.themeId, colorway.id);
+    var roles = [p.paper, p.surface, p.accent, p.accent2, p.line];
+    var html = '';
+    for (var i = 0; i < roles.length; i++) {
+      html += '<i class="color-dot" style="background:' + roles[i] + '"></i>';
+    }
+    return html;
+  }
+
+  function renderColorPop() {
+    var colorways = currentColorways();
+    var spec = Themes.getSpec(state.themeId);
+    var html = '<div class="level-pop-head"><span class="pop-title">COLORWAYS · 主题配色</span><span class="pop-note">' + colorways.length + ' PALETTES</span></div><div class="color-list">';
+    colorways.forEach(function (colorway) {
+      html += '<button class="color-option' + (state.colorId === colorway.id ? ' active' : '') + '" data-color="' + colorway.id + '"><span class="color-chip-dots large">' + colorwayDots(colorway) + '</span><span class="color-copy"><strong>' + colorway.name + '</strong><small>' + spec.name + ' · ' + (colorway.id === 'default' ? '主题原配色' : '定制配色') + '</small></span></button>';
+    });
+    html += '</div><p class="level-footnote">每套主题附带 4 套定制配色；L2–L6 全等级生效，L1 黑白极简不参与配色。</p>';
+    colorPop.innerHTML = html;
+    colorPop.querySelectorAll('.color-option').forEach(function (option) {
+      option.addEventListener('click', function () {
+        state.colorId = option.dataset.color;
+        closeColorPicker();
+        renderColorControls();
+        convert().catch(function () {});
+      });
+    });
+
+  }
 
   /* ---------- 复制 / 下载 ---------- */
 
@@ -518,6 +619,8 @@
         var level = currentLevel();
         suffix += '_L' + level.order + '_' + level.short;
         if (isDynamicLevel()) suffix += state.motionEnabled ? '_动态' : '_静态回退';
+        var colorway = currentColorway();
+        if (colorway && colorway.id !== 'default') suffix += '_' + colorway.name;
       }
       var blob = new Blob(['\ufeff' + state.html], { type: 'text/html;charset=utf-8' });
       var anchor = document.createElement('a');
@@ -545,11 +648,12 @@
   if (window.ResizeObserver) new ResizeObserver(applyPreviewLayout).observe(previewWrap);
   else window.addEventListener('resize', applyPreviewLayout);
   validBadge.addEventListener('click', function () { validPanel.hidden = !validPanel.hidden; });
-  document.addEventListener('click', function () { closePicker(); closeLevelPicker(); });
-  document.addEventListener('keydown', function (event) { if (event.key === 'Escape') { closePicker(); closeLevelPicker(); } });
+  document.addEventListener('click', function () { closePicker(); closeLevelPicker(); closeColorPicker(); });
+  document.addEventListener('keydown', function (event) { if (event.key === 'Escape') { closePicker(); closeLevelPicker(); closeColorPicker(); } });
 
   buildPicker();
   buildLevelPicker();
+  buildColorPicker();
   setPreviewWidth(previewWidth);
   editor.value = SAMPLE_MD;
   convert().catch(function () {});

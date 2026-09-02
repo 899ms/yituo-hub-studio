@@ -155,21 +155,41 @@ async function main() {
     }, 12000, '工坊页面初始化');
 
     const report = [];
+    let colorwayCombos = 0;
     for (const profile of profiles) {
+      /* 每主题先跑默认配色全档位扫描，再逐个验证 4 套定制配色（402 动态 + 静态回退）。 */
+      const colorways = OriginalData.colorwaysForTheme(profile.themeId);
+      for (let ci = 0; ci < colorways.length; ci++) {
+      const colorway = colorways[ci];
+      const variantAccent = OriginalData.profileForTheme(profile.themeId, colorway.id).accent;
+      colorwayCombos++;
       await evaluate('(function(){var button=document.querySelector("[data-library=original]");button.click();'
         + 'var card=document.querySelector(".pop-card[data-id=' + profile.themeId + ']");'
         + 'if(!card)throw new Error("找不到主题 ' + profile.themeId + '");card.click();return true;}())');
+
+      if (ci) {
+        /* 非默认配色通过真实 UI 弹层点击切换，同时验证配色选择器本身可用。 */
+        await poll(async function () {
+          return evaluate('(function(){var slot=document.getElementById("colorPickerSlot");'
+            + 'return !!slot && !slot.hidden && !!slot.querySelector(".color-picker-btn");}())');
+        }, 8000, profile.name + ' 配色按钮');
+        await evaluate('(function(){document.querySelector("#colorPickerSlot .color-picker-btn").click();'
+          + 'var option=document.querySelector(".color-option[data-color=' + colorway.id + ']");'
+          + 'if(!option)throw new Error("找不到配色 ' + colorway.id + '");option.click();return true;}())');
+      }
 
       await poll(async function () {
         return evaluate('(function(){var frame=document.getElementById("preview");var root=frame.contentDocument'
           + '&&frame.contentDocument.body&&frame.contentDocument.body.firstElementChild;return !!root'
           + '&&root.getAttribute("data-original-style")===' + JSON.stringify(profile.styleId)
+          + '&&root.getAttribute("data-original-colorway")===' + JSON.stringify(colorway.id)
           + '&&root.getAttribute("data-original-template-release")==="v30-standard402-full-effects"'
           + '&&!document.getElementById("validBadge").classList.contains("bad")'
           + '&&document.getElementById("validBadge").textContent.indexOf("载入")===-1;}())');
-      }, 15000, profile.name + ' 渲染');
+      }, 15000, profile.name + ' ' + colorway.name + ' 渲染');
 
-      for (const width of WIDTHS) {
+      const widths = ci === 0 ? WIDTHS : [402];
+      for (const width of widths) {
         const widthSelector = JSON.stringify('[data-preview-width="' + width + '"]');
         await evaluate('(function(){document.querySelector(' + widthSelector + ').click();return true;}())');
         await wait(120);
@@ -204,6 +224,8 @@ async function main() {
           + 'effects:Array.from(new Set(effects)).sort(),effectCount:effects.length,'
           + 'paragraphFonts:Array.from(new Set(bodyParagraphs.map(function(p){return p.style.fontSize+"/"+p.style.lineHeight;}))),'
           + 'bodyWidths:Array.from(new Set(Array.from(root.querySelectorAll("[data-section-body=true]")).map(function(n){return n.style.maxWidth;}))),'
+          + 'accentApplied:root.outerHTML.indexOf(' + JSON.stringify(variantAccent) + ')!==-1,'
+          + 'colorway:root.getAttribute("data-original-colorway"),'
           + 'headingGaps:gaps};}())');
 
         const expectedRoot = Math.min(width, 402);
@@ -232,10 +254,12 @@ async function main() {
             return Math.abs(ratio - [16 / 9, 4 / 5, 2.35][index]) <= 0.03;
           })
           && metrics.tables === 1
+          && metrics.accentApplied
+          && metrics.colorway === colorway.id
           && requiredEffects.every(function (effect) { return metrics.effects.includes(effect); })
           && metrics.paragraphFonts.every(function (font) { return font === '13px/1.86'; })
           && metrics.bodyWidths.length === 1 && metrics.bodyWidths[0] === '370px';
-        report.push({ theme: profile.themeId, name: profile.name, mode: 'dynamic', width: width, ok: ok, metrics: metrics });
+        report.push({ theme: profile.themeId, name: profile.name, colorway: colorway.id, colorwayName: colorway.name, mode: 'dynamic', width: width, ok: ok, metrics: metrics });
 
         if (width === 402) {
           const clip = await evaluate('(function(){var r=document.getElementById("preview").getBoundingClientRect();'
@@ -246,7 +270,7 @@ async function main() {
             fromSurface: true,
             clip: { x: clip.x, y: clip.y, width: clip.width, height: clip.height, scale: 1 }
           });
-          fs.writeFileSync(path.join(screenshotDir, profile.themeId + '-402.png'), Buffer.from(screenshot.data, 'base64'));
+          fs.writeFileSync(path.join(screenshotDir, profile.themeId + (ci ? '-' + colorway.id : '') + '-402.png'), Buffer.from(screenshot.data, 'base64'));
         }
       }
 
@@ -256,8 +280,9 @@ async function main() {
       await poll(async function () {
         return evaluate('(function(){var root=document.getElementById("preview").contentDocument.body.firstElementChild;'
           + 'return root&&root.getAttribute("data-original-style")===' + JSON.stringify(profile.styleId)
+          + '&&root.getAttribute("data-original-colorway")===' + JSON.stringify(colorway.id)
           + '&&root.getAttribute("data-original-motion-enabled")==="false";}())');
-      }, 15000, profile.name + ' 静态回退');
+      }, 15000, profile.name + ' ' + colorway.name + ' 静态回退');
       const staticMetrics = await evaluate('(function(){var frame=document.getElementById("preview"),doc=frame.contentDocument,'
         + 'body=doc.body,root=body.firstElementChild,r=root.getBoundingClientRect(),'
         + 'placeholders=Array.from(root.querySelectorAll("[data-image-kind=theme-placeholder]"));return {'
@@ -272,6 +297,7 @@ async function main() {
         + 'placeholderThemes:placeholders.map(function(n){return n.getAttribute("data-placeholder-theme");}),'
         + 'placeholderRatios:placeholders.map(function(n){return n.getAttribute("data-placeholder-ratio");}),'
         + 'placeholderAnimations:placeholders.reduce(function(sum,n){return sum+n.querySelectorAll("animate,animateTransform,animateMotion,set").length;},0),'
+        + 'accentApplied:root.outerHTML.indexOf(' + JSON.stringify(variantAccent) + ')!==-1,'
         + 'release:root.getAttribute("data-original-template-release")};}())');
       const staticOk = staticMetrics.previewWidth === 402
         && staticMetrics.rootWidth === 402
@@ -286,8 +312,9 @@ async function main() {
         && staticMetrics.placeholderRatios.join(',') === '16:9,4:5,2.35:1'
         && staticMetrics.placeholderAnimations === 0
         && staticMetrics.tables === 1
+        && staticMetrics.accentApplied
         && staticMetrics.release === 'v30-standard402-full-effects';
-      report.push({ theme: profile.themeId, name: profile.name, mode: 'static-fallback', width: 402, ok: staticOk, metrics: staticMetrics });
+      report.push({ theme: profile.themeId, name: profile.name, colorway: colorway.id, colorwayName: colorway.name, mode: 'static-fallback', width: 402, ok: staticOk, metrics: staticMetrics });
       await evaluate('(function(){var motion=document.getElementById("motionModeBtn");'
         + 'if(motion.getAttribute("aria-pressed")==="false")motion.click();return true;}())');
       await poll(async function () {
@@ -295,47 +322,76 @@ async function main() {
           + 'return root&&root.getAttribute("data-original-style")===' + JSON.stringify(profile.styleId)
           + '&&root.getAttribute("data-original-motion-enabled")==="true";}())');
       }, 15000, profile.name + ' 恢复动态');
+      }
     }
 
-    /* 额外保留一张不受工坊滚动容器裁切的深海终端全长样张，便于人工检查下半篇效果。 */
-    await evaluate('(function(){var button=document.querySelector("[data-library=original]");button.click();'
-      + 'document.querySelector(".pop-card[data-id=deep-sea]").click();return true;}())');
-    await poll(async function () {
-      return evaluate('(function(){var root=document.getElementById("preview").contentDocument.body.firstElementChild;'
-        + 'return root&&root.getAttribute("data-original-style")==="deep-sea-terminal";}())');
-    }, 15000, '深海终端全长样张');
-    await evaluate('(function(){Array.from(document.querySelectorAll("[data-preview-width]")).find(function(button){'
-      + 'return button.getAttribute("data-preview-width")==="402";}).click();return true;}())');
-    await wait(150);
-    const fullPreviewHtml = await evaluate('document.getElementById("preview").contentDocument.documentElement.outerHTML');
-    const frameTree = await cdp.send('Page.getFrameTree');
-    await cdp.send('Emulation.setDeviceMetricsOverride', {
-      width: 402, height: 1100, deviceScaleFactor: 1, mobile: false
-    });
-    await cdp.send('Page.setDocumentContent', {
-      frameId: frameTree.frameTree.frame.id,
-      html: fullPreviewHtml
-    });
-    await poll(async function () {
-      return evaluate('document.readyState==="complete"&&Array.from(document.images).every(function(img){return img.complete;})');
-    }, 12000, '全长样张图片');
-    await evaluate('document.documentElement.style.overflow="visible";document.body.style.overflow="visible";true');
-    const fullLayout = await cdp.send('Page.getLayoutMetrics');
-    const fullSize = fullLayout.cssContentSize || fullLayout.contentSize;
-    const fullScreenshot = await cdp.send('Page.captureScreenshot', {
-      format: 'png',
-      captureBeyondViewport: true,
-      fromSurface: true,
-      clip: { x: 0, y: 0, width: 402, height: Math.ceil(fullSize.height), scale: 1 }
-    });
-    const fullScreenshotPath = path.join(screenshotDir, 'deep-sea-full-402.png');
-    fs.writeFileSync(fullScreenshotPath, Buffer.from(fullScreenshot.data, 'base64'));
+    /* 额外保留不受工坊滚动容器裁切的深海终端全长样张（默认 + 4 套配色），便于人工检查下半篇效果。 */
+    const captureFullSample = async function (colorway) {
+      /* 全长样张会把主 frame 替换为预览文档，因此每张样张前重新加载工作室。 */
+      await cdp.send('Emulation.setDeviceMetricsOverride', {
+        width: 1600, height: 1100, deviceScaleFactor: 1, mobile: false
+      });
+      await cdp.send('Page.navigate', { url: STUDIO_URL });
+      await poll(async function () {
+        return evaluate('document.readyState === "complete" && !!window.Md2GZHOriginalVisuals && !!document.getElementById("preview")');
+      }, 12000, '工坊页面初始化（全长样张）');
+      await evaluate('(function(){var button=document.querySelector("[data-library=original]");button.click();'
+        + 'document.querySelector(".pop-card[data-id=deep-sea]").click();return true;}())');
+      /* 切主题会把配色重置为 default，先等 default 渲染落地。 */
+      await poll(async function () {
+        return evaluate('(function(){var root=document.getElementById("preview").contentDocument.body.firstElementChild;'
+          + 'return root&&root.getAttribute("data-original-style")==="deep-sea-terminal"'
+          + '&&root.getAttribute("data-original-colorway")==="default";}())');
+      }, 15000, '深海终端全长样张 ' + colorway.name);
+      if (colorway.id !== 'default') {
+        await evaluate('(function(){document.querySelector("#colorPickerSlot .color-picker-btn").click();'
+          + 'var option=document.querySelector(".color-option[data-color=' + colorway.id + ']");'
+          + 'if(!option)throw new Error("找不到配色 ' + colorway.id + '");option.click();return true;}())');
+        await poll(async function () {
+          return evaluate('(function(){var root=document.getElementById("preview").contentDocument.body.firstElementChild;'
+            + 'return root&&root.getAttribute("data-original-colorway")===' + JSON.stringify(colorway.id) + ';}())');
+        }, 15000, '深海终端配色切换 ' + colorway.name);
+      }
+      await evaluate('(function(){Array.from(document.querySelectorAll("[data-preview-width]")).find(function(button){'
+        + 'return button.getAttribute("data-preview-width")==="402";}).click();return true;}())');
+      await wait(150);
+      const fullPreviewHtml = await evaluate('document.getElementById("preview").contentDocument.documentElement.outerHTML');
+      const frameTree = await cdp.send('Page.getFrameTree');
+      await cdp.send('Emulation.setDeviceMetricsOverride', {
+        width: 402, height: 1100, deviceScaleFactor: 1, mobile: false
+      });
+      await cdp.send('Page.setDocumentContent', {
+        frameId: frameTree.frameTree.frame.id,
+        html: fullPreviewHtml
+      });
+      await poll(async function () {
+        return evaluate('document.readyState==="complete"&&Array.from(document.images).every(function(img){return img.complete;})');
+      }, 12000, '全长样张图片');
+      await evaluate('document.documentElement.style.overflow="visible";document.body.style.overflow="visible";true');
+      const fullLayout = await cdp.send('Page.getLayoutMetrics');
+      const fullSize = fullLayout.cssContentSize || fullLayout.contentSize;
+      const fullScreenshot = await cdp.send('Page.captureScreenshot', {
+        format: 'png',
+        captureBeyondViewport: true,
+        fromSurface: true,
+        clip: { x: 0, y: 0, width: 402, height: Math.ceil(fullSize.height), scale: 1 }
+      });
+      const fullScreenshotPath = path.join(screenshotDir, 'deep-sea-' + (colorway.id === 'default' ? 'full' : colorway.id) + '-402.png');
+      fs.writeFileSync(fullScreenshotPath, Buffer.from(fullScreenshot.data, 'base64'));
+      return fullScreenshotPath;
+    };
+    const deepSeaColorways = OriginalData.colorwaysForTheme('deep-sea');
+    let fullScreenshotPath = '';
+    for (const colorway of deepSeaColorways) {
+      fullScreenshotPath = await captureFullSample(colorway);
+    }
 
     const failures = report.filter(function (item) { return !item.ok; });
     const result = {
       url: STUDIO_URL,
       release: 'v30-standard402-full-effects',
       themes: profiles.length,
+      colorwayCombos: colorwayCombos,
       widths: WIDTHS,
       checks: report.length,
       results: report,
@@ -349,6 +405,7 @@ async function main() {
     fs.writeFileSync(reportPath, JSON.stringify(result, null, 2) + '\n', 'utf8');
     console.log(JSON.stringify({
       themes: result.themes,
+      colorwayCombos: result.colorwayCombos,
       checks: result.checks,
       failures: failures.length,
       browserErrors: browserErrors.length,

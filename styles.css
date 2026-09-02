@@ -337,6 +337,59 @@ body {
 }
 .motion-mode-btn { min-width: 68px; }
 
+/* ---------- 高级排版配色选择（每主题 5 套定制配色） ---------- */
+.color-picker-slot { position: relative; display: inline-flex; }
+.color-picker-slot[hidden] { display: none !important; }
+.color-picker-btn { max-width: 220px; }
+.color-chip-dots {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+.color-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1px solid rgba(29, 48, 69, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+.color-dot + .color-dot { margin-left: -3px; }
+.color-chip-dots.large .color-dot { width: 15px; height: 15px; }
+.color-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 82;
+  width: 420px;
+  max-width: 88vw;
+  padding: 14px 16px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(29, 48, 69, 0.16);
+}
+.color-list { display: grid; gap: 6px; }
+.color-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--dark);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.color-option:hover { border-color: #B9C6D2; }
+.color-option.active { border-color: var(--dark); background: var(--bg); }
+.color-copy { display: flex; flex-direction: column; min-width: 0; }
+.color-copy strong { font-size: 12.5px; font-weight: 650; }
+.color-copy small { margin-top: 2px; color: var(--sub); font-size: 10.5px; line-height: 1.45; }
+
 /* ---------- 动效组件库面板 ---------- */
 .motion-modal {
   position: fixed;
@@ -646,6 +699,8 @@ body {
   }
   .level-picker-slot { position: static; flex: 1 1 190px; min-width: 0; }
   .level-picker-btn { width: 100%; max-width: none; justify-content: center; }
+  .color-picker-slot { position: static; flex: 1 1 190px; min-width: 0; }
+  .color-picker-btn { width: 100%; max-width: none; justify-content: center; }
   .motion-mode-btn { flex: 0 0 auto; }
   .author-field { flex: 1 1 100%; min-width: 0; }
   .author-field input { width: auto; min-width: 0; flex: 1; }
@@ -666,5 +721,6 @@ body {
   .preview-pane .width-toggle .btn { justify-content: center; min-height: 36px; }
   .picker-pop { left: 16px; right: 16px; top: calc(100% + 6px); width: auto; max-width: none; }
   .level-pop { left: 16px; right: 16px; top: calc(100% + 6px); width: auto; max-width: none; }
+  .color-pop { left: 16px; right: 16px; top: calc(100% + 6px); width: auto; max-width: none; }
   .pop-grid { grid-template-columns: 1fr; }
 }

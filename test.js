@@ -566,4 +566,231 @@ for (const component of manifest.components) {
 console.log('svg-safety ' + (unsafeSvg === 0 ? 'PASS' : 'FAIL') + ' files=148 unsafe=' + unsafeSvg);
 if (unsafeSvg) fail = true;
 
+/* ---------- 高级排版配色系统：15 主题 × 5 配色（默认 + 4 定制） ---------- */
+
+function colorLuminance(hex) {
+  const channels = [1, 3, 5].map(function (offset) {
+    const value = parseInt(hex.slice(offset, offset + 2), 16) / 255;
+    return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+function colorContrast(a, b) {
+  const [l1, l2] = [colorLuminance(a), colorLuminance(b)].sort(function (x, y) { return y - x; });
+  return (l1 + 0.05) / (l2 + 0.05);
+}
+
+function normalizeHexColor(value) {
+  const hex = String(value).toUpperCase().slice(1);
+  if (hex.length !== 3) return '#' + hex;
+  return '#' + hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+}
+
+const COLORWAY_CORE_ROLES = ['paper', 'surface', 'ink', 'muted', 'accent', 'accent2', 'line'];
+const COLORWAY_EXTRA_ROLES = ['gridLine', 'surfaceInk', 'surfaceMuted', 'wash', 'washSoft', 'decor', 'decorSoft'];
+
+let colorwayEntryFailures = 0;
+let colorwayVariantCount = 0;
+for (const profile of OriginalData.PROFILES) {
+  const list = OriginalData.colorwaysForTheme(profile.themeId);
+  if (!list || list.length !== 5 || list[0].id !== 'default' || list[0].colors) {
+    console.log('COLORWAY REGISTRY FAIL ' + profile.themeId + ' 必须为 5 条且首条 default 不带 colors');
+    colorwayEntryFailures++;
+    continue;
+  }
+  colorwayVariantCount += list.length - 1;
+  const ids = new Set(list.map(function (entry) { return entry.id; }));
+  if (ids.size !== list.length || list.some(function (entry) { return !entry.id || !entry.name; })) {
+    console.log('COLORWAY REGISTRY FAIL ' + profile.themeId + ' id 重复或名称缺失');
+    colorwayEntryFailures++;
+  }
+  if (OriginalData.profileForTheme(profile.themeId, 'non-existent') !== OriginalData.profileForTheme(profile.themeId)) {
+    console.log('COLORWAY REGISTRY FAIL ' + profile.themeId + ' 未知 colorId 必须回退默认配色');
+    colorwayEntryFailures++;
+  }
+}
+console.log('colorway-registry ' + (colorwayEntryFailures === 0 ? 'PASS' : 'FAIL')
+  + ' themes=' + OriginalData.PROFILES.length + ' variants=' + colorwayVariantCount);
+if (colorwayEntryFailures) fail = true;
+
+let colorwayRoleFailures = 0;
+for (const profile of OriginalData.PROFILES) {
+  const required = COLORWAY_CORE_ROLES.concat(
+    COLORWAY_EXTRA_ROLES.filter(function (role) { return typeof profile[role] === 'string'; })
+  );
+  for (const entry of OriginalData.colorwaysForTheme(profile.themeId).slice(1)) {
+    let merged = null;
+    try {
+      merged = OriginalData.profileForTheme(profile.themeId, entry.id);
+    } catch (error) {
+      console.log('COLORWAY ROLE FAIL ' + profile.themeId + '/' + entry.id + ' ' + error.message);
+      colorwayRoleFailures++;
+      continue;
+    }
+    for (const role of required) {
+      const value = entry.colors[role];
+      const valid = role === 'gridLine'
+        ? /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*0?\.\d+\s*\)$/.test(value || '')
+        : /^#[0-9A-Fa-f]{6}$/.test(value || '');
+      if (!valid) {
+        console.log('COLORWAY ROLE FAIL ' + profile.themeId + '/' + entry.id + ' 角色 ' + role + ' 缺失或格式非法');
+        colorwayRoleFailures++;
+      }
+    }
+    if (merged.accentOn !== merged.paper) {
+      console.log('COLORWAY ROLE FAIL ' + profile.themeId + '/' + entry.id + ' accentOn 必须跟随 paper');
+      colorwayRoleFailures++;
+    }
+    if (!merged.underline || merged.underline.indexOf(merged.accent2) === -1) {
+      console.log('COLORWAY ROLE FAIL ' + profile.themeId + '/' + entry.id + ' underline 未随配色重建');
+      colorwayRoleFailures++;
+    }
+  }
+}
+console.log('colorway-roles ' + (colorwayRoleFailures === 0 ? 'PASS' : 'FAIL'));
+if (colorwayRoleFailures) fail = true;
+
+let colorwayMapFailures = 0;
+for (const profile of OriginalData.PROFILES) {
+  for (const entry of OriginalData.colorwaysForTheme(profile.themeId).slice(1)) {
+    const merged = OriginalData.profileForTheme(profile.themeId, entry.id);
+    const sources = new Set(merged.colorMap.map(function (pair) { return pair[0]; }));
+    if (sources.size !== merged.colorMap.length) {
+      console.log('COLORWAY MAP FAIL ' + profile.themeId + '/' + entry.id + ' 存在一源多目标的冲突映射');
+      colorwayMapFailures++;
+    }
+    if (!merged.colorMap.length) {
+      console.log('COLORWAY MAP FAIL ' + profile.themeId + '/' + entry.id + ' 变体必须至少改变一个颜色');
+      colorwayMapFailures++;
+    }
+  }
+}
+console.log('colorway-map ' + (colorwayMapFailures === 0 ? 'PASS' : 'FAIL'));
+if (colorwayMapFailures) fail = true;
+
+/* 冻结模板 + 组件 SVG 内出现的每个着色 hex（含 3 位缩写）都必须属于该主题的默认角色值，
+ * 否则配色变体会在模板上留下换不掉的“孤儿色”。 */
+let colorwayCoverageFailures = 0;
+for (const profile of OriginalData.PROFILES) {
+  const entry = templateManifest.templates.find(function (item) { return item.style === profile.styleId; });
+  if (!entry) {
+    console.log('COLORWAY COVERAGE FAIL ' + profile.themeId + ' 模板清单缺条目');
+    colorwayCoverageFailures++;
+    continue;
+  }
+  const roleValues = new Set(COLORWAY_CORE_ROLES.concat(COLORWAY_EXTRA_ROLES, ['accentOn'])
+    .map(function (role) { return profile[role]; })
+    .filter(function (value) { return typeof value === 'string' && value.charAt(0) === '#'; })
+    .map(normalizeHexColor));
+  const sources = {};
+  for (const file of [entry.motion_file, entry.static_file]) {
+    const html = fs.readFileSync(path.join(__dirname, 'motion', 'templates-v6', file), 'utf8');
+    for (const hex of html.match(/#[0-9A-Fa-f]{3,6}\b/g) || []) {
+      sources[normalizeHexColor(hex)] = true;
+    }
+  }
+  for (const component of manifest.components) {
+    if (component.style !== profile.styleId) continue;
+    for (const key of ['static_file', 'motion_file']) {
+      const svg = fs.readFileSync(path.join(__dirname, OriginalVisuals.sitePath(component[key])), 'utf8');
+      for (const hex of svg.match(/#[0-9A-Fa-f]{3,6}\b/g) || []) {
+        sources[normalizeHexColor(hex)] = true;
+      }
+    }
+  }
+  for (const hex of Object.keys(sources)) {
+    if (!roleValues.has(hex)) {
+      console.log('COLORWAY COVERAGE FAIL ' + profile.themeId + ' 资产色 ' + hex + ' 不在默认配色角色中，变体无法覆盖');
+      colorwayCoverageFailures++;
+    }
+  }
+}
+console.log('colorway-asset-coverage ' + (colorwayCoverageFailures === 0 ? 'PASS' : 'FAIL')
+  + ' themes=' + OriginalData.PROFILES.length);
+if (colorwayCoverageFailures) fail = true;
+
+/* 可读性底线：正文、次要文字、强调色、强调底上的文字对比度。 */
+let colorwayContrastFailures = 0;
+for (const profile of OriginalData.PROFILES) {
+  const variants = [{ id: 'default' }].concat(OriginalData.colorwaysForTheme(profile.themeId).slice(1));
+  for (const entry of variants) {
+    const merged = OriginalData.profileForTheme(profile.themeId, entry.id);
+    const label = profile.themeId + '/' + merged.colorId;
+    const checks = [
+      ['ink/paper', colorContrast(merged.ink, merged.paper), 4.5],
+      ['muted/paper', colorContrast(merged.muted, merged.paper), 3.5],
+      ['accent/paper', colorContrast(merged.accent, merged.paper), 3],
+      ['accentOn/accent', colorContrast(merged.accentOn, merged.accent), 3]
+    ];
+    if (merged.surfaceInk) checks.push(['surfaceInk/surface', colorContrast(merged.surfaceInk, merged.surface), 4.5]);
+    for (const [name, ratio, min] of checks) {
+      if (ratio < min) {
+        console.log('COLORWAY CONTRAST FAIL ' + label + ' ' + name + '=' + ratio.toFixed(2) + ' < ' + min);
+        colorwayContrastFailures++;
+      }
+    }
+  }
+}
+console.log('colorway-contrast ' + (colorwayContrastFailures === 0 ? 'PASS' : 'FAIL')
+  + ' combinations=' + (OriginalData.PROFILES.length * 5));
+if (colorwayContrastFailures) fail = true;
+
+/* 渲染级验证：每个变体输出不得残留任何“已变化的默认色”，且携带追溯属性。 */
+const colorwayRenderMd = [
+  '# 配色验证标题', '',
+  '这段**正文**用于确认换色后的内容注入块。', '',
+  '> 引用块确认装饰色。', '',
+  '- 列表项确认符号色。', '',
+  '## 章节一', '第二章正文确认章节标题与段落。', '',
+  '## 章节二', '![占位](placeholder://16-9)', '',
+  '---', '', '署名：配色验证'
+].join('\n');
+const colorwayRenderTokens = Converter.parse(colorwayRenderMd);
+let colorwayRenderFailures = 0;
+let colorwayRenderCount = 0;
+for (const profile of OriginalData.PROFILES) {
+  const spec = Themes.getSpec(profile.themeId);
+  const assets = loadOriginalAssets(OriginalVisuals.assetRequirements(profile.themeId, 'motion-themed-frame', true, manifest));
+  for (const entry of OriginalData.colorwaysForTheme(profile.themeId)) {
+    const merged = OriginalData.profileForTheme(profile.themeId, entry.id);
+    const colorMap = merged.colorMap || [];
+    const html = OriginalVisuals.render(colorwayRenderTokens, spec, {
+      levelId: 'motion-themed-frame', motionEnabled: true, colorId: entry.id
+    }, assets, manifest);
+    colorwayRenderCount++;
+    for (const [from, to] of colorMap) {
+      const residue = new RegExp(escapeRegExp(from) + '\\b', 'gi');
+      if (residue.test(html)) {
+        console.log('COLORWAY RENDER FAIL ' + profile.themeId + '/' + entry.id + ' 残留默认色 ' + from + '（应替换为 ' + to + '）');
+        colorwayRenderFailures++;
+      }
+    }
+    if (html.indexOf('data-original-colorway="' + entry.id + '"') === -1) {
+      console.log('COLORWAY RENDER FAIL ' + profile.themeId + '/' + entry.id + ' 缺少 colorway 追溯属性');
+      colorwayRenderFailures++;
+    }
+  }
+}
+console.log('colorway-render ' + (colorwayRenderFailures === 0 ? 'PASS' : 'FAIL')
+  + ' combinations=' + colorwayRenderCount);
+if (colorwayRenderFailures) fail = true;
+
+/* 工坊 UI：配色弹层插槽、事件接线与渲染参数必须就位。 */
+const colorwayUiOk = studioDoc.getElementById('colorPickerSlot')
+  && appSource.indexOf('function buildColorPicker()') !== -1
+  && appSource.indexOf('function renderColorControls()') !== -1
+  && appSource.indexOf('function renderColorPop()') !== -1
+  && appSource.indexOf('colorId: state.colorId') !== -1
+  && appSource.indexOf('state.colorId = \'default\';') !== -1
+  && appSource.indexOf('buildColorPicker();') !== -1
+  && appSource.indexOf('closeColorPicker();') !== -1
+  && stylesSource.indexOf('.color-pop') !== -1;
+console.log('colorway-ui ' + (colorwayUiOk ? 'PASS' : 'FAIL'));
+if (!colorwayUiOk) fail = true;
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 process.exit(fail ? 1 : 0);
