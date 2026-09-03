@@ -1,0 +1,25 @@
+--- a/cli/lib/html.js
++++ b/cli/lib/html.js
+@@ -1,7 +1,12 @@
+ 'use strict';
+ 
+-const MAX_CONTENT_CHARS = 20000;
+-const MAX_CONTENT_BYTES = 1024 * 1024;
++// WeChat documents advise < 20000 chars, but the server enforces a byte
++// limit instead (measured 2026-09: accepts >= 600KB bytes, rejects around
++// 690KB bytes with errcode 45002). Keep the documented number only as a
++// soft-warning threshold and enforce the measured byte budget.
++const MAX_CONTENT_CHARS = 220000;
++const MAX_CONTENT_BYTES = 600 * 1024;
++const DOCS_MAX_CONTENT_CHARS = 20000;
+ 
+ function compactForWechat(source, options) {
+   const opts = options || {};
+@@ -53,6 +58,7 @@
+ }
+ 
+ module.exports = {
++  DOCS_MAX_CONTENT_CHARS,
+   MAX_CONTENT_CHARS,
+   MAX_CONTENT_BYTES,
+   compactForWechat,

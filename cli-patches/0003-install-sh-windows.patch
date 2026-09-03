@@ -1,0 +1,21 @@
+--- a/install.sh
++++ b/install.sh
+@@ -25,7 +25,17 @@
+ cd "$install_root"
+ npm install --omit=dev --no-audit --no-fund
+ chmod +x "$install_root/cli/bin/yituo-hub-gzh.js"
+-ln -sfn "$install_root/cli/bin/yituo-hub-gzh.js" "$bin_root/yituo-hub-gzh"
++case "$(uname -s)" in
++  MINGW*|MSYS*|CYGWIN*)
++    # Git Bash/MSYS 的 ln -s 实际是复制，会让 bin 内相对 require 失效；改为生成 node 转发包装脚本
++    cli_entry="$(cygpath -w "$install_root/cli/bin/yituo-hub-gzh.js" 2>/dev/null || echo "$install_root/cli/bin/yituo-hub-gzh.js")"
++    { echo "#!/usr/bin/env bash"; echo "exec node "$cli_entry" "$@""; } > "$bin_root/yituo-hub-gzh"
++    chmod +x "$bin_root/yituo-hub-gzh"
++    ;;
++  *)
++    ln -sfn "$install_root/cli/bin/yituo-hub-gzh.js" "$bin_root/yituo-hub-gzh"
++    ;;
++esac
+ 
+ echo "YI TUO HUB GZH CLI 已安装到 $install_root"
+ if ! command -v yituo-hub-gzh >/dev/null 2>&1; then

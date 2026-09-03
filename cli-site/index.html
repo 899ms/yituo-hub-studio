@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YI TUO HUB GZH CLI · Markdown 到公众号草稿</title>
+<meta name="description" content="YI TUO HUB GZH CLI：让 Agent 把写好的 Markdown 排版并直接保存到微信公众号草稿箱。">
+<meta name="theme-color" content="#003f54">
+<meta property="og:title" content="YI TUO HUB GZH CLI">
+<meta property="og:description" content="把写好的 Markdown，直接送进微信公众号草稿箱。">
+<meta property="og:image" content="https://cli.yituohub.com/assets/gzh-cli-hero-poster.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://cli.yituohub.com/">
+<link rel="stylesheet" href="cinematic.css">
+<link rel="stylesheet" href="product.css">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+<a class="skip" href="#main">跳到主要内容</a>
+
+<main id="main" class="site-shell">
+  <section id="top" class="hero" aria-labelledby="hero-title">
+    <video class="hero-video" autoplay loop muted playsinline preload="metadata" poster="assets/gzh-cli-hero-poster.jpg" aria-hidden="true">
+      <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4" type="video/mp4">
+    </video>
+
+    <div class="hero-content">
+      <header class="site-nav">
+        <a class="brand" href="#top" aria-label="YI TUO HUB GZH CLI 首页">
+          <span class="brand-name">YI TUO HUB<sup>®</sup></span>
+          <span class="brand-subtitle">GZH CLI</span>
+        </a>
+
+        <nav class="nav-links" aria-label="主导航">
+          <a class="active" href="#top" aria-current="page">首页</a>
+          <a href="#capabilities">功能</a>
+          <a href="https://studio.yituohub.com/">在线排版</a>
+          <a href="docs/">文档</a>
+          <a href="https://github.com/yan9651688/yituo-hub-studio" target="_blank" rel="noopener">源码</a>
+        </nav>
+
+        <a class="glass-button nav-cta" href="#install">开始使用 <span aria-hidden="true">↗</span></a>
+      </header>
+
+      <div class="hero-center">
+        <p class="eyebrow">FROM MARKDOWN TO THE DRAFT BOX</p>
+        <h1 id="hero-title" class="hero-title">写好 Markdown，<br><em>一键排进草稿箱。</em></h1>
+        <p class="hero-lead">33 套高级排版主题，图片全自动处理，一条命令直连微信接口。排版在本地完成，密钥只存本机，只创建草稿、不代发布。</p>
+        <div class="hero-actions">
+          <a class="glass-button hero-cta" href="#capabilities">查看功能明细 <span aria-hidden="true">↘</span></a>
+          <a class="text-button" href="https://studio.yituohub.com/">在线排版</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="capabilities" class="product-section capability-section" aria-labelledby="capability-title">
+    <div class="section-heading">
+      <p class="eyebrow">YI TUO HUB / GZH CLI</p>
+      <h2 id="capability-title">排版与存稿，<em>一条命令完成。</em></h2>
+      <p>它不是一个后台，也不是另一个编辑器。Agent 写好 Markdown 以后，调用本地 CLI，选择排版风格，必要时直接把结果交给微信公众号草稿箱。</p>
+    </div>
+
+    <div class="capability-grid">
+      <article class="capability-card">
+        <span class="card-index">01 / LAYOUT</span>
+        <h3>排版 CLI</h3>
+        <p>把 Markdown 转成公众号正文 HTML。支持本地图片、远程图片和 YI TUO HUB STUDIO 的基础主题与高级主题。</p>
+        <code class="command-line">yituo-hub-gzh layout article.md<br>--style violet-studio --level L4</code>
+        <a class="card-link" href="https://studio.yituohub.com/">打开在线排版 ↗</a>
+      </article>
+
+      <article class="capability-card capability-card-accent">
+        <span class="card-index">02 / DRAFT</span>
+        <h3>推稿 CLI</h3>
+        <p>在用户明确要求时，上传图片、创建草稿并回读核对。只存草稿，不调用发布接口，发布权始终留在公众号后台。</p>
+        <code class="command-line">yituo-hub-gzh draft article.md<br>--style violet-studio --cover cover.jpg</code>
+        <a class="card-link" href="#setup">查看配置清单 ↘</a>
+      </article>
+    </div>
+  </section>
+
+  <section class="product-section flow-section" aria-labelledby="flow-title">
+    <div class="section-heading section-heading-inline">
+      <div>
+        <p class="eyebrow">THE FLOW / 03 STEPS</p>
+        <h2 id="flow-title">从文件到草稿，<em>三步完成。</em></h2>
+      </div>
+      <p>CLI 请求直接发往微信接口，不经过 YI TUO HUB 的中心服务器。图片只在当前进程和临时目录中处理。</p>
+    </div>
+    <div class="flow-grid">
+      <article class="flow-item"><span>01</span><div><h3>交给 Agent</h3><p>准备好 Markdown 和图片，路径以文章文件所在目录为基准。</p></div></article>
+      <article class="flow-item"><span>02</span><div><h3>选择风格</h3><p>运行 <code>styles --json</code>，让用户决定主题和高级等级。</p></div></article>
+      <article class="flow-item"><span>03</span><div><h3>核对草稿</h3><p>微信返回成功后，再回读标题、封面和草稿状态。</p></div></article>
+    </div>
+  </section>
+
+  <section id="setup" class="product-section setup-section" aria-labelledby="setup-title">
+    <div class="setup-copy">
+      <p class="eyebrow">BEFORE DRAFT / CONFIG CHECK</p>
+      <h2 id="setup-title">先把配置，<em>准备好。</em></h2>
+      <p>第一次推稿前，Agent 会引导用户准备自己的公众号 AppID、AppSecret 和实际运行环境出口 IP。密钥只放在调用 CLI 的本机，不放进网页或 Markdown。</p>
+      <a class="text-button" href="https://developers.weixin.qq.com/console/product/mp/" target="_blank" rel="noopener">打开微信公众号开发者后台 ↗</a>
+    </div>
+    <ol class="checklist">
+      <li><span>01</span><div><strong>AppID / AppSecret</strong><small>配置在本机环境变量或 0600 配置文件</small></div></li>
+      <li><span>02</span><div><strong>服务器白名单</strong><small>把实际出口 IP 加入目标公众号白名单</small></div></li>
+      <li><span>03</span><div><strong>封面与排版风格</strong><small>没有正文图片时，用 --cover 指定封面</small></div></li>
+    </ol>
+  </section>
+
+  <section id="install" class="product-section install-section" aria-labelledby="install-title">
+    <div class="install-card">
+      <div>
+        <p class="eyebrow">QUICK START / LOCAL CLI</p>
+        <h2 id="install-title">装好 CLI，<em>直接调用。</em></h2>
+        <p>需要 Node.js 20 或更高版本。发布包同时包含 CLI 和 Agent Skill。</p>
+      </div>
+      <div class="install-actions">
+        <div class="install-command" aria-label="CLI 安装命令"><code id="installCommand">curl -fsSL https://cli.yituohub.com/install.sh | bash</code><button id="copyInstall" type="button">复制命令</button></div>
+        <div class="install-links"><a href="docs/">阅读完整文档 ↗</a><a href="releases/yituo-hub-gzh-cli.tar.gz">下载发布包 ↘</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div><strong>YI TUO HUB GZH CLI</strong><span>给 Agent 的公众号排版与存稿能力</span></div>
+  <div class="footer-links"><a href="https://studio.yituohub.com/">在线排版</a><a href="docs/">文档</a><a href="https://github.com/yan9651688/yituo-hub-studio" target="_blank" rel="noopener">源码 ↗</a></div>
+  <small>CLI 直连微信 · 只创建草稿 · 基于 YI TUO HUB STUDIO</small>
+</footer>
+
+<script>
+(function () {
+  var button = document.getElementById('copyInstall');
+  var commandElement = document.getElementById('installCommand');
+  if (!button || !commandElement) return;
+
+  var command = commandElement.textContent;
+  var done = function () {
+    button.textContent = '已复制 ✓';
+    window.setTimeout(function () { button.textContent = '复制命令'; }, 1600);
+  };
+
+  button.addEventListener('click', function () {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(command).then(done).catch(function () {});
+      return;
+    }
+
+    var range = document.createRange();
+    range.selectNodeContents(commandElement);
+    var selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    try {
+      document.execCommand('copy');
+      done();
+    } finally {
+      selection.removeAllRanges();
+    }
+  });
+})();
+</script>
+</body>
+</html>

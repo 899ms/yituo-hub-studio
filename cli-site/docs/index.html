@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YI TUO HUB GZH CLI · 使用文档</title>
+<meta name="description" content="YI TUO HUB GZH CLI 的安装、排版、微信公众号草稿配置与命令说明。">
+<meta name="theme-color" content="#003f54">
+<link rel="canonical" href="https://cli.yituohub.com/docs/">
+<link rel="stylesheet" href="docs.css">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+</head>
+<body>
+<header class="docs-nav">
+  <a class="docs-brand" href="../" aria-label="返回 YI TUO HUB GZH CLI 首页">
+    <span>YI TUO HUB<sup>®</sup></span>
+    <small>GZH CLI / DOCS</small>
+  </a>
+  <nav aria-label="文档导航">
+    <a href="../">首页</a>
+    <a href="https://studio.yituohub.com/">Studio</a>
+    <a href="#install">安装</a>
+    <a href="#wechat">微信配置</a>
+  </nav>
+</header>
+
+<main class="docs-layout">
+  <aside class="docs-aside" aria-label="目录">
+    <p>ON THIS PAGE</p>
+    <a href="#overview">它是什么</a>
+    <a href="#install">安装</a>
+    <a href="#commands">常用命令</a>
+    <a href="#wechat">微信配置</a>
+    <a href="#styles">风格选择</a>
+    <a href="#images">图片处理</a>
+    <a href="#safety">安全边界</a>
+  </aside>
+
+  <article class="docs-content">
+    <header class="doc-intro">
+      <p class="eyebrow">YI TUO HUB / LOCAL AGENT CAPABILITY</p>
+      <h1>GZH CLI <em>使用文档</em></h1>
+      <p class="lead">给 Agent 的微信公众号排版与存稿能力。文章写好以后，用一条命令选择风格、处理图片，并在需要时创建草稿。</p>
+      <div class="intro-links"><a href="yituo-hub-gzh-cli.md" download>下载原始 Markdown ↘</a><a href="../releases/yituo-hub-gzh-cli.tar.gz">下载 CLI 发布包 ↘</a></div>
+    </header>
+
+    <section id="overview" class="doc-section">
+      <p class="section-kicker">01 / OVERVIEW</p>
+      <h2>它是什么</h2>
+      <p>它接收已经写好的 Markdown，可以带本地图片或远程图片；然后调用 YI TUO HUB STUDIO 的排版引擎生成公众号正文。用户明确要求存稿时，CLI 会直接调用微信公众号接口上传图片、创建草稿，并回读核对标题与封面。</p>
+      <div class="callout"><strong>边界先说清楚：</strong> CLI 请求直接发往微信接口，不经过 <code>cli.yituohub.com</code> 或其他中心服务器。<code>draft</code> 只创建草稿，不调用发布接口。</div>
+    </section>
+
+    <section id="install" class="doc-section">
+      <p class="section-kicker">02 / INSTALL</p>
+      <h2>先装到本机</h2>
+      <p>需要 Node.js 20 或更高版本。安装脚本会下载发布包、安装运行依赖，并把 <code>yituo-hub-gzh</code> 放到本机的用户级 bin 目录。</p>
+      <div class="code-card">
+        <div class="code-head"><span>TERMINAL</span><button class="copy-button" type="button" data-copy-target="install-command">复制</button></div>
+        <pre><code id="install-command">curl -fsSL https://cli.yituohub.com/install.sh | bash</code></pre>
+      </div>
+      <div class="code-card">
+        <div class="code-head"><span>CHECK</span><button class="copy-button" type="button" data-copy-target="help-command">复制</button></div>
+        <pre><code id="help-command">yituo-hub-gzh --help</code></pre>
+      </div>
+      <p class="muted-note">发布包同时包含 <code>agent-skill/yituo-hub-gzh</code>。在支持技能的 Agent 中，把这个目录按其技能安装方式装入 skills 目录。</p>
+    </section>
+
+    <section id="commands" class="doc-section">
+      <p class="section-kicker">03 / COMMANDS</p>
+      <h2>常用命令</h2>
+      <div class="command-block">
+        <h3>查看排版风格</h3>
+        <pre><code>yituo-hub-gzh styles</code></pre>
+      </div>
+      <div class="command-block">
+        <h3>只排版，不请求微信</h3>
+        <pre><code>yituo-hub-gzh layout article.md \
+  --style violet-studio \
+  --level L4 \
+  --out article_gzh.html</code></pre>
+      </div>
+      <div class="command-block">
+        <h3>只检查，不创建草稿</h3>
+        <pre><code>yituo-hub-gzh draft article.md \
+  --style violet-studio \
+  --level L4 \
+  --dry-run \
+  --json</code></pre>
+      </div>
+      <div class="command-block">
+        <h3>创建并核对草稿</h3>
+        <pre><code>yituo-hub-gzh draft article.md \
+  --style violet-studio \
+  --level L4 \
+  --cover assets/cover.jpg \
+  --author '作者名' \
+  --json</code></pre>
+      </div>
+    </section>
+
+    <section id="wechat" class="doc-section">
+      <p class="section-kicker">04 / WECHAT SETUP</p>
+      <h2>微信配置</h2>
+      <p>第一次推稿前，准备目标公众号的 AppID、AppSecret，并把调用 CLI 的实际运行环境出口 IP 加入公众号的服务器 IP 白名单。</p>
+      <div class="code-card">
+        <div class="code-head"><span>ENVIRONMENT</span><button class="copy-button" type="button" data-copy-target="env-command">复制</button></div>
+        <pre><code id="env-command">export WECHAT_APPID='你的 AppID'
+export WECHAT_APPSECRET='你的 AppSecret'
+yituo-hub-gzh doctor --json</code></pre>
+      </div>
+      <ol class="number-list">
+        <li><span>01</span><div><strong>开启 AppSecret</strong><p>进入自己的微信公众号开发者后台，在基本配置中查看或重置 AppSecret。</p></div></li>
+        <li><span>02</span><div><strong>添加服务器白名单</strong><p>如果返回 <code>40164</code>，把错误信息中微信给出的实际出口 IP 加入白名单。</p></div></li>
+        <li><span>03</span><div><strong>只在本机保存密钥</strong><p>不要把 AppSecret 写进 Markdown、前端页面、发布包或 Git 仓库。</p></div></li>
+      </ol>
+      <a class="inline-link" href="https://developers.weixin.qq.com/console/product/mp/" target="_blank" rel="noopener">打开微信公众号开发者后台 ↗</a>
+    </section>
+
+    <section id="styles" class="doc-section">
+      <p class="section-kicker">05 / STYLE INDEX</p>
+      <h2>风格选择</h2>
+      <p>基础主题不需要视觉等级，高级主题支持 L1–L6。运行 <code>styles --json</code> 可以拿到完整列表，适合由 Agent 展示给用户选择。</p>
+      <div class="style-list">
+        <div><strong>violet-studio</strong><span>紫灰工作室 · L1–L6</span></div>
+        <div><strong>deep-sea</strong><span>深海终端 · AI / 技术</span></div>
+        <div><strong>blueprint</strong><span>蓝图网格 · 教程 / 流程</span></div>
+        <div><strong>swiss-signal</strong><span>瑞士信号 · 清单 / 工具</span></div>
+        <div><strong>mono-gold</strong><span>黑金刊读 · 专业长文</span></div>
+      </div>
+    </section>
+
+    <section id="images" class="doc-section">
+      <p class="section-kicker">06 / IMAGES</p>
+      <h2>图片处理</h2>
+      <ul class="plain-list">
+        <li><span>—</span><p><code>layout</code> 会把图片内嵌进输出 HTML，避免依赖原始本地路径。</p></li>
+        <li><span>—</span><p><code>draft</code> 只在 CLI 进程内存或临时处理中读取图片，必要时压缩为微信支持的 JPG/PNG；上传完成后不在 YI TUO 服务器长期保存。</p></li>
+        <li><span>—</span><p>没有正文图片时必须用 <code>--cover</code> 指定封面。</p></li>
+        <li><span>—</span><p><code>placeholder://</code> 只是排版占位符，不能直接推稿。</p></li>
+      </ul>
+    </section>
+
+    <section id="safety" class="doc-section">
+      <p class="section-kicker">07 / SAFETY BOUNDARY</p>
+      <h2>安全边界</h2>
+      <ul class="plain-list">
+        <li><span>—</span><p><code>draft</code> 只创建草稿，不调用发布接口。</p></li>
+        <li><span>—</span><p>Agent 只有在用户明确说“存稿”或“推稿”时才调用 <code>draft</code>。</p></li>
+        <li><span>—</span><p><code>--json</code> 的 <code>ok</code>、<code>verified</code> 和 <code>published</code> 字段是结果判断依据。</p></li>
+        <li><span>—</span><p>创建成功的标准是 <code>ok: true</code>、<code>verified: true</code>、<code>published: false</code>。</p></li>
+      </ul>
+      <div class="doc-end"><a href="../">返回首页 ↗</a><a href="https://studio.yituohub.com/">打开 Studio ↗</a><a href="yituo-hub-gzh-cli.md" download>下载 Markdown ↘</a></div>
+    </section>
+  </article>
+</main>
+
+<footer class="docs-footer">基于 <a href="https://github.com/yan9651688/yituo-hub-studio" target="_blank" rel="noopener">YI TUO HUB STUDIO</a> · AGPL-3.0-or-later</footer>
+
+<script>
+(function () {
+  var buttons = document.querySelectorAll('[data-copy-target]');
+  buttons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      var target = document.getElementById(button.getAttribute('data-copy-target'));
+      if (!target) return;
+      var text = target.textContent;
+      var done = function () {
+        button.textContent = '已复制 ✓';
+        window.setTimeout(function () { button.textContent = '复制'; }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () {});
+        return;
+      }
+      var range = document.createRange();
+      range.selectNodeContents(target);
+      var selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      try { document.execCommand('copy'); done(); } finally { selection.removeAllRanges(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>

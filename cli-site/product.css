@@ -1,0 +1,441 @@
+.site-shell {
+  background: var(--background);
+}
+
+.product-section {
+  width: min(100%, 1320px);
+  margin: 0 auto;
+  padding: clamp(4.5rem, 7vw, 7rem) 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.product-section .eyebrow {
+  animation: none;
+}
+
+.section-heading {
+  max-width: 760px;
+}
+
+.section-heading h2,
+.setup-copy h2,
+.install-card h2 {
+  margin: 18px 0 0;
+  font-family: var(--font-body);
+  font-size: clamp(1.65rem, 2.8vw, 2.7rem);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 1.1;
+}
+
+.section-heading h2 em,
+.setup-copy h2 em,
+.install-card h2 em {
+  color: rgba(255, 255, 255, 0.53);
+  font-weight: 400;
+  font-style: normal;
+}
+
+.section-heading > p:last-child,
+.setup-copy > p,
+.install-card > div:first-child > p:last-child {
+  max-width: 630px;
+  margin: 20px 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  line-height: 1.78;
+}
+
+.capability-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 42px;
+}
+
+.capability-card {
+  display: flex;
+  min-height: 320px;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: clamp(24px, 3vw, 36px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 26px;
+  background: rgba(0, 20, 31, 0.54);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.capability-card-accent {
+  background: rgba(39, 31, 58, 0.42);
+}
+
+.card-index {
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+}
+
+.capability-card h3 {
+  margin: 26px 0 0;
+  font-family: var(--font-body);
+  font-size: clamp(1.2rem, 1.7vw, 1.65rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.capability-card p {
+  max-width: 490px;
+  margin: 14px 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.86rem;
+  line-height: 1.75;
+}
+
+.command-line {
+  display: block;
+  width: 100%;
+  margin-top: auto;
+  padding: 18px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.13);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+  color: rgba(255, 255, 255, 0.72);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.8;
+  white-space: normal;
+}
+
+.card-link {
+  margin-top: 20px;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.78rem;
+  transition: color 180ms ease;
+}
+
+.card-link:hover,
+.card-link:focus-visible {
+  color: var(--foreground);
+}
+
+.section-heading-inline {
+  display: flex;
+  max-width: none;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 48px;
+}
+
+.section-heading-inline > p {
+  max-width: 370px !important;
+  margin: 0 !important;
+}
+
+.flow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 48px;
+}
+
+.flow-item {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 16px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.flow-item > span {
+  color: rgba(255, 255, 255, 0.45);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.flow-item h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.flow-item p {
+  margin: 12px 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.84rem;
+  line-height: 1.75;
+}
+
+.flow-item code {
+  color: rgba(255, 255, 255, 0.85);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+.setup-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.82fr);
+  align-items: start;
+  gap: clamp(48px, 10vw, 150px);
+}
+
+.setup-copy .text-button {
+  display: inline-block;
+  margin-top: 24px;
+}
+
+.checklist {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.checklist li {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 18px;
+  align-items: start;
+  padding: 22px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.checklist li > span {
+  color: rgba(255, 255, 255, 0.44);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+}
+
+.checklist strong,
+.checklist small {
+  display: block;
+}
+
+.checklist strong {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.checklist small {
+  margin-top: 7px;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.install-section {
+  padding-bottom: clamp(4.5rem, 7vw, 7rem);
+}
+
+.install-card {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+  gap: clamp(40px, 8vw, 120px);
+  min-width: 0;
+  padding: clamp(26px, 4vw, 44px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.install-card > div,
+.install-actions {
+  min-width: 0;
+  align-self: center;
+}
+
+.install-command {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  gap: 16px;
+  padding: 0 14px 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(0, 12, 20, 0.42);
+}
+
+.install-command code {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.install-command button {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--foreground);
+  cursor: pointer;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  transition: background-color 180ms ease, transform 180ms ease;
+}
+
+.install-command button:hover,
+.install-command button:focus-visible {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.03);
+}
+
+.install-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 18px;
+  color: rgba(255, 255, 255, 0.63);
+  font-size: 0.78rem;
+}
+
+.install-links a:hover,
+.install-links a:focus-visible {
+  color: var(--foreground);
+}
+
+.site-footer {
+  display: grid;
+  width: min(100%, 1320px);
+  grid-template-columns: 1fr auto;
+  gap: 18px 40px;
+  margin: 0 auto;
+  padding: 0 32px 38px;
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 0.78rem;
+}
+
+.site-footer strong,
+.site-footer span,
+.site-footer small {
+  display: block;
+}
+
+.site-footer strong {
+  color: rgba(255, 255, 255, 0.86);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.site-footer span {
+  margin-top: 7px;
+  font-size: 0.72rem;
+}
+
+.footer-links {
+  display: flex;
+  align-items: start;
+  gap: 22px;
+}
+
+.footer-links a:hover,
+.footer-links a:focus-visible {
+  color: var(--foreground);
+}
+
+.site-footer small {
+  grid-column: 1 / -1;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.11);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 860px) {
+  .product-section {
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+
+  .capability-grid,
+  .flow-grid,
+  .setup-section,
+  .install-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .section-heading-inline {
+    display: block;
+  }
+
+  .section-heading-inline > p {
+    margin-top: 28px !important;
+  }
+
+  .flow-grid {
+    margin-top: 52px;
+  }
+
+  .setup-section {
+    gap: 56px;
+  }
+
+  .install-card {
+    gap: 42px;
+  }
+}
+
+@media (max-width: 620px) {
+  .product-section {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .section-heading h2,
+  .setup-copy h2,
+  .install-card h2 {
+    font-size: clamp(1.6rem, 7vw, 2rem);
+  }
+
+  .capability-grid {
+    margin-top: 32px;
+  }
+
+  .capability-card {
+    min-height: 280px;
+    padding: 24px 20px;
+  }
+
+  .install-card {
+    padding: 26px 20px;
+  }
+
+  .install-command {
+    gap: 8px;
+    padding-left: 12px;
+  }
+
+  .install-command code {
+    font-size: 0.67rem;
+  }
+
+  .site-footer {
+    display: block;
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .footer-links {
+    margin-top: 24px;
+  }
+
+  .site-footer small {
+    margin-top: 24px;
+  }
+}

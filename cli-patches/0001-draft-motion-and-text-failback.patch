@@ -1,0 +1,59 @@
+--- a/cli/bin/yituo-hub-gzh.js
++++ b/cli/bin/yituo-hub-gzh.js
+@@ -65,7 +65,11 @@
+     process.stdout.write(value + '\n');
+     return;
+   }
+-  if (value.ok === false) return;
++  if (value.ok === false) {
++    process.stdout.write('✗ ' + (value.error || value.wechat || '操作未成功') + '\n');
++    if (value.hint) process.stdout.write('  提示：' + value.hint + '\n');
++    return;
++  }
+   const lines = [];
+   if (value.title) lines.push('✓ ' + value.title);
+   if (value.style) lines.push('  风格：' + value.style.name + (value.level ? ' · ' + value.level.label : ''));
+@@ -344,10 +348,11 @@
+   const config = flags['dry-run'] ? {} : await resolveWechatConfig(flags, true);
+   const source = await readMarkdown(input);
+   const options = renderOptions(flags, config);
+-  // Drafts default to the static branch: decorative motion is not meaningful
+-  // in the editor and the payload is smaller. --preserve-visuals is explicit.
+-  options.static = true;
+-  options.motion = false;
++  // Drafts render the static branch by default (smaller payload). When the
++  // caller passes --preserve-visuals we keep the full motion markup: the
++  // draft/add API stores SMIL animations verbatim (verified 2026-09).
++  options.static = flags.static === true;
++  options.motion = flags['preserve-visuals'] === true ? true : false;
+   const rendered = renderer.renderMarkdown(source.markdown, options);
+   const validation = renderer.validateRendered(rendered.html);
+   const sources = images.extractImageSources(rendered.html);
+@@ -399,6 +404,9 @@
+   content = html.compactForWechat(content, { preserveVisuals: flags['preserve-visuals'] === true });
+   html.validateArticleShell(content);
+   const size = html.assertWechatLimits(content);
++  const docLimitWarnings = size.chars > html.DOCS_MAX_CONTENT_CHARS
++    ? ['正文 ' + size.chars + ' 字符超过微信文档建议的 ' + html.DOCS_MAX_CONTENT_CHARS + ' 字符（实测服务端可接收，属未文档化行为）']
++    : [];
+   if (flags['dry-run']) {
+     writeResult({
+       ok: true,
+@@ -410,7 +418,7 @@
+       inlineImages: bodyImages.length,
+       contentChars: size.chars,
+       contentBytes: size.bytes,
+-      validationWarnings: validation.warnings,
++      validationWarnings: validation.warnings.concat(docLimitWarnings),
+       wouldCreateDraft: true,
+       published: false
+     }, flags);
+@@ -455,7 +463,7 @@
+     inlineImages: bodyImages.length,
+     contentChars: size.chars,
+     contentBytes: size.bytes,
+-    validationWarnings: validation.warnings,
++    validationWarnings: validation.warnings.concat(docLimitWarnings),
+     verified: true,
+     published: false
+   }, flags);
