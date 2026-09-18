@@ -155,6 +155,16 @@ docker build -t yituo-hub-studio . && docker run -d -p 80:80 yituo-hub-studio
 
 </div>
 
+## 💡 欢迎参与贡献
+
+这是一个零构建、零依赖的纯静态项目，参与门槛很低——改完刷新浏览器就能看到效果。非常欢迎通过 Issue 报告问题，或提交 Pull Request 一起把它打磨得更好：
+
+- **贡献新主题**：基础主题在 `themes.js` 里按参数化 spec 注册；高级排版组件在 `motion/` 下扩展，保持样式全内联、文字用 `<span leaf>` 包裹、不使用 absolute/fixed/sticky 定位。
+- **修复缺陷**：排版引擎（`converter.js`）、平台红线校验（`validator.js`）、工坊交互（`app.js`）都是独立模块，欢迎认领。
+- **改进文档与示例**：README、语法速览、使用教程，或晒出你的排版成品案例。
+
+提交前请跑一遍 `npm run check`（JS 语法 + 单元测试），确保全部通过；新主题建议附一张预览截图。任何问题欢迎开 [Issue](https://github.com/yan9651688/yituo-hub-studio/issues) 讨论，我们会尽快回复。
+
 ## 🙏 致谢
 
 - [gzh-design-skill](https://github.com/isjiamu/gzh-design-skill)（AGPL-3.0，甲木 × 摸鱼小李）——本项目的排版工作流、平台红线标准与「经典复刻」组主题的配色来源
